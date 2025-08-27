@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Deserción Estudiantil en Colombia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            color: white !important;
+            transform: translateY(-2px);
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 20px 20px;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 1.5rem;
+            border: none;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: 600;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+        
+        .stat-title {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
+        }
+        
+        .section {
+            display: none;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+        
+        .active-section {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+        
+        footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .admin-panel {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+            border-left: 4px solid var(--secondary-color);
+        }
+        
+        .team-member {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .team-member img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 1rem;
+            border: 5px solid var(--light-color);
+        }
+        
+        .data-table {
+            font-size: 0.9rem;
+        }
+        
+        .proyeccion-card {
+            border-left: 4px solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">Deserción Estudiantil Colombia</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-section="dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="about">Quiénes Somos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="data">Los Datos</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold">Análisis de Deserción Estudiantil en Colombia</h1>
+            <p class="lead">2017 - 2022 | Enfoque Multivariable | Estrategias de Permanencia</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active-section">
+            <h2 class="mb-4">Dashboard de Indicadores</h2>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-number">28.7%</div>
+                        <div class="stat-title">Tasa promedio de deserción</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-number">42%</div>
+                        <div class="stat-title">Deserción en zonas rurales</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-number">19%</div>
+                        <div class="stat-title">Aumento postpandemia</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card">
+                        <div class="stat-number">63%</div>
+                        <div class="stat-title">Por factores económicos</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Proyección 2025 -->
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card proyeccion-card">
+                        <div class="card-header">
+                            Proyección de Deserción para 2025
+                        </div>
+                        <div class="card-body">
+                            <p>Según nuestro análisis de datos históricos y tendencias, se proyecta que la tasa de deserción a nivel nacional para 2025 será de aproximadamente <strong>15.8%</strong>, mostrando una disminución gradual respecto a años anteriores gracias a las políticas de permanencia estudiantil.</p>
+                            <div class="chart-container">
+                                <canvas id="proyeccionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            Deserción por Nivel de Formación (2022)
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="nivelChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            Tendencia de deserción (2017-2022)
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Deserción por Áreas de Conocimiento (2022)
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container" style="height: 400px;">
+                                <canvas id="areasChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Visualizaciones de gráficas basadas en los archivos proporcionados -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            Deserción por Modalidad - Nivel Técnico
+                        </div>
+                        <div class="card-body">
+                            <img src="ruta/a/tu/imagen/Modalidad Tecnico.jpeg" class="img-fluid" alt="Deserción por Modalidad - Técnico">
+                            <p class="mt-2 text-muted">Tasa de deserción en educación técnica por modalidad presencial y virtual (2017-2022)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            Deserción por Áreas - Nivel Universitario
+                        </div>
+                        <div class="card-body">
+                            <img src="ruta/a/tu/imagen/Area Universitario.png" class="img-fluid" alt="Deserción por Áreas - Universitario">
+                            <p class="mt-2 text-muted">Tasa de deserción en educación universitaria por áreas de conocimiento (2017-2022)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="section">
+            <h2 class="mb-4">Quiénes Somos</h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Nuestro Propósito</h4>
+                    <p>Somos Emmanuel Duque e Isabella Quintero, jóvenes que han dedicado su juventud a crecer y estudiar. Nuestra misión es analizar los factores asociados a la deserción estudiantil en Colombia entre 2017 y 2022 mediante un enfoque multivariable, con el fin de identificar patrones críticos, brechas institucionales y regionales, y formular estrategias efectivas de permanencia.</p>
+                    
+                    <h4 class="mt-4">Nuestra Formación</h4>
+                    <p>Emmanuel estudia Administración Financiera y análisis de datos para ayudar a empresas a crecer financieramente. Isabella estudió Mercadeo y su propósito es emprender y analizar mercados, productos y nuevas oportunidades en los mercados.</p>
+                    
+                    <h4 class="mt-4">Nuestros Valores</h4>
+                    <ul>
+                        <li><strong>Innovación:</strong> Aplicamos metodologías avanzadas de análisis de datos para encontrar soluciones creativas.</li>
+                        <li><strong>Ética:</strong> Mantenemos los más altos estándares éticos en el manejo y análisis de información.</li>
+                        <li><strong>Transparencia:</strong> Garantizamos que nuestros métodos y resultados sean claros y verificables.</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4>Objetivos del Proyecto</h4>
+                    <ul>
+                        <li>Identificar los factores más determinantes en la deserción estudiantil durante el período 2017-2022</li>
+                        <li>Analizar cómo evolucionaron estos factores antes, durante y después de la pandemia</li>
+                        <li>Detectar patrones regionales y diferencias entre niveles de formación, áreas de conocimiento y modalidades</li>
+                        <li>Evaluar la efectividad de las políticas actuales de permanencia</li>
+                        <li>Ofrecer evidencia para construir modelos predictivos y propuestas institucionales</li>
+                    </ul>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            Metodología de Análisis
+                        </div>
+                        <div class="card-body">
+                            <p>Utilizamos técnicas avanzadas de análisis multivariable y machine learning para examinar complejas interacciones entre factores socioeconómicos, institucionales y personales que influyen en la deserción estudiantil.</p>
+                            <p>Nuestro enfoque considera variables como nivel de formación, modalidad de estudio, área de conocimiento, región geográfica e impacto de la pandemia.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h4 class="mt-5 mb-4">Nuestro Equipo</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="team-member">
+                        <img src="https://via.placeholder.com/150?text=Emmanuel+D" alt="Emmanuel Duque">
+                        <h5>Emmanuel Duque</h5>
+                        <p>Analista de Datos Financieros</p>
+                        <p>Estudiante de Administración Financiera</p>
+                        <p>Especializado en análisis de datos para crecimiento empresarial</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="team-member">
+                        <img src="https://via.placeholder.com/150?text=Isabella+Q" alt="Isabella Quintero">
+                        <h5>Isabella Quintero</h5>
+                        <p>Analista de Mercados</p>
+                        <p>Profesional en Mercadeo</p>
+                        <p>Especializada en análisis de mercados y oportunidades comerciales</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Section -->
+        <section id="data" class="section">
+            <h2 class="mb-4">Los Datos</h2>
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Datos de Deserción por Nivel Técnico (Modalidad)
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-sm data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Año</th>
+                                            <th>Presencial</th>
+                                            <th>Virtual</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>2017</td><td>0.1896</td><td>0.3556</td></tr>
+                                        <tr><td>2018</td><td>0.1647</td><td>0.2540</td></tr>
+                                        <tr><td>2019</td><td>0.1805</td><td>0.2241</td></tr>
+                                        <tr><td>2020</td><td>0.1326</td><td>0.1908</td></tr>
+                                        <tr><td>2021</td><td>0.1911</td><td>0.1801</td></tr>
+                                        <tr><td>2022</td><td>0.1358</td><td>0.2725</td></tr>
+                                        <tr class="table-primary"><td>2023</td><td>0.1550</td><td>0.2220</td></tr>
+                                        <tr class="table-primary"><td>2024</td><td>0.1530</td><td>0.2110</td></tr>
+                                        <tr class="table-primary"><td>2025</td><td>0.1510</td><td>0.2000</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            Datos de Deserción por Nivel Universitario (Áreas de Conocimiento) - 2025
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-sm data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Área de Conocimiento</th>
+                                            <th>2025 (Proyección)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Agronomía veterinaria y afines</td><td>0.087</td></tr>
+                                        <tr><td>Bellas artes</td><td>0.192</td></tr>
+                                        <tr><td>Ciencias de la educación</td><td>0.243</td></tr>
+                                        <tr><td>Ciencias de la salud</td><td>0.099</td></tr>
+                                        <tr><td>Ciencias sociales y humanas</td><td>0.103</td></tr>
+                                        <tr><td>Economía, administración, contaduría y afines</td><td>0.139</td></tr>
+                                        <tr><td>Ingeniería, arquitectura, urbanismo y afines</td><td>0.153</td></tr>
+                                        <tr><td>Matemáticas y ciencias naturales</td><td>0.137</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            Fuentes de datos
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">MEN - Ministerio de Educación Nacional</li>
+                                <li class="list-group-item">DANE - Departamento Administrativo Nacional de Estadística</li>
+                                <li class="list-group-item">ICFES - Instituto Colombiano para la Evaluación de la Educación</li>
+                                <li class="list-group-item">SPADIES - Sistema para la Prevención de la Deserción en Educación Superior</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            Metodología de recolección
+                        </div>
+                        <div class="card-body">
+                            <p>Los datos se recopilaron mediante:</p>
+                            <ul>
+                                <li>Análisis de bases de datos oficiales del Ministerio de Educación</li>
+                                <li>Procesamiento de información histórica 2017-2022</li>
+                                <li>Modelos predictivos para proyecciones 2023-2025</li>
+                                <li>Análisis multivariable de factores asociados</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Análisis de Deserción Estudiantil en Colombia</h5>
+                    <p>Proyecto de análisis de datos para identificar factores asociados a la deserción estudiantil entre 2017 y 2022.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Enlaces</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-white">Dashboard</a></li>
+                        <li><a href="#" class="text-white">Quiénes Somos</a></li>
+                        <li><a href="#" class="text-white">Los Datos</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contacto</h5>
+                    <p>analisis.desercion@ejemplo.edu.co</p>
+                    <p>+57 1 234 5678</p>
+                </div>
+            </div>
+            <hr class="mt-4 bg-light">
+            <p class="text-center mb-0">© 2023 Análisis de Deserción Estudiantil. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Update active nav link
+                document.querySelectorAll('.nav-link').forEach(navLink => {
+                    navLink.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Show selected section
+                const sectionId = this.getAttribute('data-section');
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.remove('active-section');
+                });
+                document.getElementById(sectionId).classList.add('active-section');
+            });
+        });
+        
+        // Charts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Nivel de Formación Chart
+            const nivelCtx = document.getElementById('nivelChart').getContext('2d');
+            const nivelChart = new Chart(nivelCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Técnico', 'Tecnológico', 'Universitario'],
+                    datasets: [{
+                        label: 'Porcentaje de deserción (2022)',
+                        data: [20.5, 18.2, 15.3],
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.7)',
+                            'rgba(46, 204, 113, 0.7)',
+                            'rgba(155, 89, 182, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(155, 89, 182, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Porcentaje de deserción'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Trend Chart
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            const trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2017', '2018', '2019', '2020', '2021', '2022'],
+                    datasets: [{
+                        label: 'Tasa nacional de deserción',
+                        data: [25.3, 26.1, 26.8, 32.5, 30.7, 28.7],
+                        fill: false,
+                        borderColor: 'rgb(231, 76, 60)',
+                        tension: 0.1,
+                        pointBackgroundColor: 'rgb(231, 76, 60)',
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Porcentaje de deserción'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Areas Chart
+            const areasCtx = document.getElementById('areasChart').getContext('2d');
+            const areasChart = new Chart(areasCtx, {
+                type: 'bar',
+                data: {
+                    labels: [
+                        'Economía, Admin, Contaduría',
+                        'Ingeniería, Arquitectura',
+                        'Ciencias de la Educación',
+                        'Ciencias de la Salud',
+                        'Ciencias Sociales',
+                        'Bellas Artes',
+                        'Agronomía',
+                        'Matemáticas y Ciencias'
+                    ],
+                    datasets: [{
+                        label: 'Porcentaje de deserción (2022)',
+                        data: [17.8, 17.9, 20.4, 16.9, 7.5, 20.2, 14.9, 12.1],
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Porcentaje de deserción'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Proyección Chart
+            const proyeccionCtx = document.getElementById('proyeccionChart').getContext('2d');
+            const proyeccionChart = new Chart(proyeccionCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+                    datasets: [{
+                        label: 'Proyección de deserción nacional',
+                        data: [32.5, 30.7, 28.7, 26.5, 24.2, 22.0],
+                        fill: false,
+                        borderColor: 'rgb(46, 204, 113)',
+                        tension: 0.1,
+                        pointBackgroundColor: 'rgb(46, 204, 113)',
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Porcentaje de deserción'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
