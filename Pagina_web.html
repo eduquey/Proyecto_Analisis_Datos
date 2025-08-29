@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Deserción por Nivel y Área</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F5F2;
+            color: #4A4A4A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .filter-btn.active {
+            background-color: #5D8BF4;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(6, 1fr); /* 1 for areas, 6 for years */
+            grid-auto-rows: minmax(40px, auto);
+            gap: 2px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+        .heatmap-header-cell, .heatmap-y-label, .heatmap-cell {
+            padding: 8px;
+            text-align: center;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        .heatmap-y-label {
+            justify-content: flex-start;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .heatmap-header-cell {
+            font-weight: 700;
+            color: #718096;
+        }
+        .heatmap-legend {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .legend-color-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-gray-900 text-white py-8 shadow-md">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-3xl font-bold">Análisis de Deserción Estudiantil en Educación Superior</h1>
+            <p class="text-gray-400 mt-2">Un estudio visual de la permanencia estudiantil entre 2017 y 2022</p>
+            <p class="text-gray-400 mt-2 text-sm">Por Isabella Quintero Ocampo y Emmanuel Duque Yarce</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <!-- Executive Summary and General Objective Section -->
+        <section id="resumen" class="mb-20">
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Resumen Ejecutivo</h2>
+                <p class="text-gray-600 leading-relaxed">
+                    Este estudio revela patrones de deserción que a menudo se ocultan en las estadísticas globales. Se destaca la importancia de las variables como la **modalidad de estudio (virtual vs. presencial)** y el **área de formación** para comprender la deserción. Los programas virtuales, en particular, muestran una necesidad crítica de mayor acompañamiento académico y psicosocial. El análisis demuestra que las soluciones homogéneas son ineficaces y subraya la necesidad de enfoques estratégicos y diferenciados para cada programa de estudio.
+                </p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Objetivo General</h2>
+                <p class="text-gray-600 leading-relaxed">
+                    Estudiar las variables clave relacionadas con la permanencia estudiantil en la educación superior colombiana durante el período 2017-2022, con el fin de identificar patrones de deserción por nivel, modalidad y área de formación, y así generar conocimientos que apoyen la toma de decisiones estratégicas.
+                </p>
+            </div>
+        </section>
+
+        <!-- New Chart Section: Nivel de Formación -->
+        <section id="nivel-formacion" class="pt-16 mb-20">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold text-center mb-6">Evolución Anual de la Deserción por Nivel de Formación</h3>
+                <div class="chart-container">
+                    <canvas id="lineChart"></canvas>
+                </div>
+                <p class="text-center text-sm text-gray-500 mt-4">Tasa de deserción por nivel de formación a lo largo de los años.</p>
+            </div>
+        </section>
+
+        <!-- Existing Chart Section: Comparativa -->
+        <section id="comparativo" class="pt-16 mb-20">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold text-center mb-6">Comparativa de la Deserción por Grupos y Años</h3>
+                <div class="flex flex-col items-center justify-center gap-6 mb-6">
+                    <!-- Nivel Filter -->
+                    <div id="nivel-buttons" class="flex flex-wrap justify-center gap-3">
+                        <button data-nivel="tecnico" class="filter-btn active bg-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-blue-600 transition">Técnico</button>
+                        <button data-nivel="tecnologico" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-300 transition">Tecnológico</button>
+                        <button data-nivel="universitario" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-300 transition">Universitario</button>
+                    </div>
+                    <div class="flex flex-col md:flex-row items-center gap-6">
+                        <!-- Año Selector -->
+                       <div class="flex items-center gap-2">
+                           <label for="year-selector" class="font-semibold text-gray-700">Año:</label>
+                           <select id="year-selector" class="bg-gray-100 rounded-md py-2 px-3 border border-gray-300">
+                               <option value="2022">2022</option>
+                               <option value="2021">2021</option>
+                               <option value="2020">2020</option>
+                               <option value="2019">2019</option>
+                               <option value="2018">2018</option>
+                               <option value="2017">2017</option>
+                           </select>
+                       </div>
+                       <!-- Tipo de Comparación -->
+                       <div id="filter-buttons" class="flex flex-wrap justify-center gap-3">
+                           <button data-filter="modalidad" class="filter-btn active bg-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-blue-600 transition">Por Modalidad</button>
+                           <button data-filter="area" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-300 transition">Por Área de Formación</button>
+                       </div>
+                   </div>
+               </div>
+               <div class="chart-container">
+                   <canvas id="barChart"></canvas>
+               </div>
+               <p id="barChartDescription" class="text-center text-sm text-gray-500 mt-4"></p>
+            </div>
+        </section>
+
+        <!-- New Heatmap Section -->
+        <section id="heatmap-section" class="pt-16 mb-20">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold text-center mb-6">Mapa de Calor de la Deserción por Área de Formación</h3>
+                <!-- Nivel Filter for Heatmap -->
+                <div id="heatmap-nivel-buttons" class="flex flex-wrap justify-center gap-3 mb-6">
+                    <button data-nivel="tecnico" class="filter-btn active bg-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-blue-600 transition">Técnico</button>
+                    <button data-nivel="tecnologico" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-300 transition">Tecnológico</button>
+                    <button data-nivel="universitario" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-300 transition">Universitario</button>
+                </div>
+                <!-- Heatmap Container -->
+                <div id="heatmap-container" class="relative">
+                    <div class="heatmap-grid mb-4">
+                        <div class="heatmap-header-cell">Área</div>
+                        <div class="heatmap-header-cell">2017</div>
+                        <div class="heatmap-header-cell">2018</div>
+                        <div class="heatmap-header-cell">2019</div>
+                        <div class="heatmap-header-cell">2020</div>
+                        <div class="heatmap-header-cell">2021</div>
+                        <div class="heatmap-header-cell">2022</div>
+                    </div>
+                </div>
+                <div class="heatmap-legend">
+                    <span class="text-sm font-semibold">Tasa de Deserción:</span>
+                    <div class="legend-item">
+                        <div class="legend-color-box bg-green-500"></div>
+                        <span class="text-gray-600">Baja</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color-box bg-yellow-500"></div>
+                        <span class="text-gray-600">Media</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color-box bg-red-500"></div>
+                        <span class="text-gray-600">Alta</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- New section for the summary of results -->
+        <section id="resultados-finales" class="pt-16 mb-20">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Resumen y Conclusiones del Análisis de Permanencia Estudiantil</h2>
+                <p class="text-gray-600 leading-relaxed mb-4">
+                    El estudio de los determinantes de la deserción estudiantil, segmentado por modalidad y área de formación, reveló que los factores de abandono varían significativamente en los niveles técnico, tecnológico y universitario.
+                </p>
+                <div class="space-y-4">
+                    <!-- Nivel Técnico Summary -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-700 mb-2">Nivel Técnico</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            A través del análisis se confirmó que la modalidad **virtual** consistentemente presenta mayores tasas de deserción que la **presencial** en todos los niveles. Sin embargo, en el nivel tecnológico, se observó una reducción de esta brecha en los últimos años, lo que sugiere una mejora en las estrategias de acompañamiento institucional.
+                        </p>
+                    </div>
+                    <!-- Nivel Tecnológico Summary -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-700 mb-2">Nivel Tecnológico</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            En cuanto a las áreas de formación, se identificó un patrón recurrente de mayor vulnerabilidad en programas de **ingeniería** y **ciencias sociales**, mientras que las áreas de **salud** y **educación** mantienen consistentemente los índices más bajos de abandono.
+                        </p>
+                    </div>
+                    <!-- Nivel Universitario Summary -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-700 mb-2">Nivel Universitario</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            En conjunto, estos hallazgos refuerzan la importancia de un enfoque analítico **segmentado** que permita a las instituciones y a las políticas públicas diseñar estrategias de permanencia específicas y efectivas, en lugar de soluciones homogéneas que no abordan las causas raíz de la deserción en cada contexto. Este tipo de análisis facilita la planificación estratégica y la asignación de recursos de manera más eficiente.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white">
+        <div class="container mx-auto px-6 py-4 text-center text-sm">
+            <p>Datos basados en el informe "La Deserción Estudiantil en la Educación Superior Colombiana".</p>
+        </div>
+    </footer>
+
+    <script>
+        // Registra el plugin de Chart.js para las etiquetas de datos
+        Chart.register(ChartDataLabels);
+
+        // Data from the provided CSV files, structured for easy access
+        const data = {
+            'tecnico': {
+                'modalidad': {
+                    '2017': { labels: ['Presencial', 'Virtual'], data: [0.1896, 0.3556], description: 'Para el nivel Técnico en 2017, la modalidad virtual tuvo una deserción significativamente mayor.' },
+                    '2018': { labels: ['Presencial', 'Virtual'], data: [0.1647, 0.254], description: 'En el nivel Técnico, la deserción virtual en 2018 continuó siendo más alta que la presencial.' },
+                    '2019': { labels: ['Presencial', 'Virtual'], data: [0.1805, 0.2241], description: 'En 2019, la deserción virtual para el nivel Técnico se mantuvo alta.' },
+                    '2020': { labels: ['Presencial', 'Virtual'], data: [0.1326, 0.1908], description: 'Para el nivel Técnico en 2020, ambas modalidades vieron una disminución en la deserción, aunque la virtual sigue siendo mayor.' },
+                    '2021': { labels: ['Presencial', 'Virtual'], data: [0.1911, 0.1801], description: 'En 2021, la deserción en la modalidad presencial en el nivel Técnico superó ligeramente a la virtual.' },
+                    '2022': { labels: ['Presencial', 'Virtual'], data: [0.1358, 0.2725], description: 'Para el nivel Técnico en 2022, la deserción virtual se disparó en comparación con la presencial.' }
+                },
+                'area': {
+                    '2017': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.053764225269915381, 0.082885489871847864, 0.028940886699507389, 0.077530956381059057, 0.078963095771701783, 0.12020905148448793, 0.10345535408826548, 0.042323138708680874], description: 'En 2017, el área de Economía para el nivel Técnico presentó la mayor deserción.' },
+                    '2018': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.07610949813355454, 0.10156093656193717, 0.14517583408476104, 0.086848072562358283, 0.093095474066732742, 0.1044982367121329, 0.1162732938833989, 0.09784347209377488], description: 'En 2018, Ciencias de la Educación mostró un pico de deserción en el nivel Técnico.' },
+                    '2019': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.07706179313205777, 0.09641031267425121, 0.12270418386638018, 0.08775411728108425, 0.08861298455648589, 0.08861298455648589, 0.08861298455648589, 0.08861298455648589], description: 'En 2019, Ciencias de la Educación para el nivel Técnico continuó con una alta deserción.' },
+                    '2020': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.09062304953925762, 0.10189839498394984, 0.11925340632252119, 0.09695420954209542, 0.1016892550189255, 0.10091993444983088, 0.1121855641151676, 0.1064295325852953], description: 'En 2020, la deserción en Ingeniería, Arquitectura, Urbanismo y afines se destacó para el nivel Técnico.' },
+                    '2021': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.08226027397260274, 0.09241517409241518, 0.10619082352163989, 0.0898517229158368, 0.08987158421319082, 0.09886470381676571, 0.10543669641470503, 0.09259160541701385], description: 'En 2021, la deserción en Ingeniería y Arquitectura se mantuvo como la más alta para el nivel Técnico.' },
+                    '2022': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.07824131584988458, 0.08906060606060606, 0.099196556499388, 0.08581452174360667, 0.08811466046187747, 0.08719018447814725, 0.09139268670187847, 0.09459344238865882], description: 'En 2022, Ingeniería y Arquitectura fue el área con la mayor tasa de deserción en el nivel Técnico.' }
+                }
+            },
+            'tecnologico': {
+                'modalidad': {
+                    '2017': { labels: ['Presencial', 'Virtual'], data: [0.0992, 0.2085], description: 'Para el nivel Tecnológico en 2017, la deserción en modalidad virtual fue más del doble que la presencial.' },
+                    '2018': { labels: ['Presencial', 'Virtual'], data: [0.1069, 0.0872], description: 'En 2018, la deserción virtual en el nivel Tecnológico disminuyó, situándose por debajo de la presencial.' },
+                    '2019': { labels: ['Presencial', 'Virtual'], data: [0.125, 0.1808], description: 'En 2019, la deserción virtual para el nivel Tecnológico volvió a superar a la presencial.' },
+                    '2020': { labels: ['Presencial', 'Virtual'], data: [0.1262, 0.186], description: 'Para el nivel Tecnológico en 2020, se mantuvo una brecha significativa en la deserción entre las modalidades, con la virtual más alta.' },
+                    '2021': { labels: ['Presencial', 'Virtual'], data: [0.1508, 0.1881], description: 'En 2021, la deserción en la modalidad presencial en el nivel Tecnológico aumentó, pero la virtual siguió siendo mayor.' },
+                    '2022': { labels: ['Presencial', 'Virtual'], data: [0.1241, 0.1714], description: 'Para el nivel Tecnológico en 2022, la modalidad virtual continuó con la tasa de deserción más alta.' }
+                },
+                'area': {
+                    '2017': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.1145813556104044, 0.08498975546153642, 0.10010191616853031, 0.05311315286896539, 0.094298979278325881, 0.10286887307295728, 0.085774823707921888, 0.091639231576281607], description: 'En 2017, el área de Agronomía para el nivel Tecnológico presentó la mayor deserción.' },
+                    '2018': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.097398589065255725, 0.085237396499318732, 0.10143610383802537, 0.047870448888037861, 0.0895375628752231, 0.099809612759537328, 0.08279581352668516, 0.076587935400350712], description: 'En 2018, Ciencias de la Educación para el nivel Tecnológico tuvo la mayor deserción.' },
+                    '2019': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.08182963339038228, 0.08381804104996916, 0.11215163618751543, 0.06192226274431943, 0.09633633215509938, 0.09904225579201506, 0.09848520336040845, 0.09340081682855273], description: 'En 2019, la deserción en Ciencias de la Educación en el nivel Tecnológico se mantuvo alta.' },
+                    '2020': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.0883314811059432, 0.08940428468755694, 0.11242337775916322, 0.06900742188476625, 0.0964724911765275, 0.0995116010186105, 0.09244033062319082, 0.09748680709667798], description: 'En 2020, se observó una alta deserción en Educación para el nivel Tecnológico.' },
+                    '2021': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.10519124446545229, 0.09632486604297103, 0.11306917642643538, 0.07693994541300977, 0.10061269553655115, 0.10237735398701918, 0.09907297314545582, 0.10565022097738222], description: 'En 2021, Agronomía y Ciencias Exactas y Naturales fueron las áreas con mayor deserción en el nivel Tecnológico.' },
+                    '2022': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.10636842797746419, 0.09796010074351083, 0.12068875549048121, 0.07844002677329532, 0.10207371549429391, 0.10375681655651543, 0.10079836528734299, 0.10682223707797775], description: 'En 2022, el área de Educación para el nivel Tecnológico registró la mayor tasa de deserción.' }
+                }
+            },
+            'universitario': {
+                'modalidad': {
+                    '2017': { labels: ['Presencial', 'Virtual'], data: [0.081242899066423638, 0.18404599754382048], description: 'Para el nivel Universitario en 2017, la deserción virtual fue más del doble que la presencial.' },
+                    '2018': { labels: ['Presencial', 'Virtual'], data: [0.0790636587943683, 0.16710622044379775], description: 'En 2018, la deserción virtual en el nivel Universitario continuó siendo significativamente más alta.' },
+                    '2019': { labels: ['Presencial', 'Virtual'], data: [0.07148010049945687, 0.17132972126117893], description: 'La deserción en modalidad virtual en 2019 para el nivel Universitario fue casi tres veces mayor que la presencial.' },
+                    '2020': { labels: ['Presencial', 'Virtual'], data: [0.069738977822874915, 0.16699153316683926], description: 'Para el nivel Universitario en 2020, ambas modalidades vieron una ligera disminución, pero la brecha persistió.' },
+                    '2021': { labels: ['Presencial', 'Virtual'], data: [0.080312268981438575, 0.16194900991871666], description: 'En 2021, la deserción en modalidad presencial en el nivel Universitario aumentó, aunque la virtual siguió siendo más alta.' },
+                    '2022': { labels: ['Presencial', 'Virtual'], data: [0.071812155444187675, 0.12347750669331423], description: 'Para el nivel Universitario en 2022, la deserción virtual mostró una disminución, pero se mantuvo por encima de la presencial.' }
+                },
+                'area': {
+                    '2017': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.15297261189044756, 0.22584913983237759, 0.20689655172413793, 0.18866374589266155, 0.10314495722376189, 0.20526291951628245, 0.21161444454654046, 0.14705882352941177], description: 'En 2017, las áreas de Bellas Artes y Educación tuvieron la mayor deserción en el nivel Universitario.' },
+                    '2018': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.138996138996139, 0.21452912019826517, 0.25146198830409355, 0.14347392892726668, 0.11294526498696786, 0.17413719354330354, 0.18908269665080968, 0.1505353882759963], description: 'En 2018, el área de Ciencias de la Educación para el nivel Universitario alcanzó un pico de deserción.' },
+                    '2019': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.13788753215908595, 0.21045885210350993, 0.24430489240428827, 0.14249110464295412, 0.10825319800045618, 0.16912168953153545, 0.18189674062334887, 0.14774311094056075], description: 'En 2019, Ciencias de la Educación continuó con la mayor tasa de deserción en el nivel Universitario.' },
+                    '2020': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.1264426578051648, 0.20017124996414775, 0.23192931441773484, 0.13600003050186596, 0.10303258591871787, 0.15858004653770335, 0.1738275062402928, 0.14193309623298642], description: 'En 2020, las áreas de Educación y Bellas Artes en el nivel Universitario mostraron las mayores tasas de deserción.' },
+                    '2021': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.1205364175317377, 0.1983081078749871, 0.2291515286566089, 0.1345914389914755, 0.10091392650893098, 0.1537725838421074, 0.16938997382218768, 0.13961204859871822], description: 'En 2021, la deserción en el área de Educación para el nivel Universitario se mantuvo en un alto nivel.' },
+                    '2022': { labels: ['Agronomía veterinaria y afines', 'Bellas artes', 'Ciencias de la educación', 'Ciencias de la salud', 'Ciencias sociales y humanas', 'Economía, administración, contaduría y afines', 'Ingeniería, arquitectura, urbanismo y afines', 'Matemáticas y ciencias naturales'], data: [0.10705298188176587, 0.1729606869403061, 0.2081919838043692, 0.11894451717469707, 0.0898517229158368, 0.1383563914946323, 0.14589279766947754, 0.12080838127395079], description: 'En 2022, el área de Educación continuó con la mayor tasa de deserción en el nivel Universitario, aunque con una ligera disminución.' }
+                }
+            }
+        };
+
+        // Aggregated data for the line chart (average of all modalities/areas per year)
+        const nivelDeFormacionData = {
+            labels: [2017, 2018, 2019, 2020, 2021, 2022],
+            datasets: [
+                {
+                    label: 'Técnico Profesional',
+                    data: [0.1802, 0.1472, 0.1472, 0.1492, 0.1601, 0.1652],
+                    borderColor: '#5D8BF4',
+                    backgroundColor: 'rgba(93, 139, 244, 0.2)',
+                    fill: false,
+                    tension: 0.4
+                },
+                {
+                    label: 'Tecnológico',
+                    data: [0.1466, 0.0976, 0.1529, 0.1561, 0.1706, 0.1477],
+                    borderColor: '#E57A44',
+                    backgroundColor: 'rgba(229, 122, 68, 0.2)',
+                    fill: false,
+                    tension: 0.4
+                },
+                {
+                    label: 'Universitario',
+                    data: [0.1326, 0.1231, 0.1214, 0.1183, 0.1219, 0.0976],
+                    borderColor: '#8BC34A',
+                    backgroundColor: 'rgba(139, 195, 74, 0.2)',
+                    fill: false,
+                    tension: 0.4
+                }
+            ]
+        };
+
+        let lineChart;
+        const initializeLineChart = () => {
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            if (lineChart) {
+                lineChart.destroy();
+            }
+            lineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: nivelDeFormacionData.labels,
+                    datasets: nivelDeFormacionData.datasets.map(dataset => ({
+                        ...dataset,
+                        data: dataset.data.map(d => (d * 100).toFixed(2)) // Convert to percentage
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Tasa de Deserción (%)' },
+                            max: 25 // Adjusted max to show the data more clearly
+                        },
+                        x: {
+                            title: { display: true, text: 'Año' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}%`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            formatter: function(value, context) {
+                                return value + '%';
+                            },
+                            color: '#4A4A4A',
+                            font: { weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        };
+
+        let barChart;
+        let currentNivel = 'tecnico';
+        let currentYear = '2022';
+        let currentFilter = 'modalidad';
+
+        const updateBarChart = () => {
+            const ctx = document.getElementById('barChart').getContext('2d');
+            const chartData = data[currentNivel][currentFilter][currentYear];
+
+            if (barChart) {
+                barChart.destroy();
+            }
+            
+            // Calculate the max value for the x-axis dynamically
+            const maxVal = Math.max(...chartData.data.map(d => d * 100));
+            const maxWithBuffer = maxVal + (maxVal * 0.1); // Add a 10% buffer
+
+            barChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Tasa de Deserción (%)',
+                        data: chartData.data.map(d => (d * 100).toFixed(2)), // Convertir a porcentaje con 2 decimales
+                        backgroundColor: ['#5D8BF4', '#E57A44', '#8BC34A', '#FFC107', '#9C27B0', '#F44336', '#4CAF50', '#00BCD4'],
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Tasa de Deserción (%)' },
+                            max: maxWithBuffer // Use the calculated max value
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'right',
+                            formatter: function(value, context) {
+                                return value + '%';
+                            },
+                            color: '#4A4A4A',
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+            document.getElementById('barChartDescription').textContent = chartData.description;
+        };
+
+        // Heatmap Logic
+        const years = ['2017', '2018', '2019', '2020', '2021', '2022'];
+        let currentHeatmapNivel = 'tecnico';
+
+        const getColorClass = (value) => {
+            // Map a value (0.0 to ~0.3) to a color scale
+            if (value >= 0.15) return 'bg-red-500';
+            if (value >= 0.10) return 'bg-yellow-500';
+            return 'bg-green-500';
+        };
+
+        const renderHeatmap = () => {
+            const heatmapContainer = document.querySelector('#heatmap-container .heatmap-grid');
+            heatmapContainer.innerHTML = ''; // Clear previous grid
+
+            // Add headers again
+            const headers = ['Área', ...years];
+            headers.forEach(headerText => {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-header-cell';
+                cell.textContent = headerText;
+                heatmapContainer.appendChild(cell);
+            });
+
+            const nivelData = data[currentHeatmapNivel]['area'];
+            const areas = Object.values(nivelData)[0].labels;
+
+            areas.forEach(area => {
+                const yLabelCell = document.createElement('div');
+                yLabelCell.className = 'heatmap-y-label';
+                yLabelCell.textContent = area;
+                heatmapContainer.appendChild(yLabelCell);
+
+                years.forEach(year => {
+                    const value = nivelData[year].data[nivelData[year].labels.indexOf(area)];
+                    const colorClass = getColorClass(value);
+                    const cell = document.createElement('div');
+                    cell.className = `heatmap-cell ${colorClass} text-white`;
+                    cell.textContent = `${(value * 100).toFixed(1)}%`;
+                    heatmapContainer.appendChild(cell);
+                });
+            });
+        };
+
+        // Filter button logic
+        const setActiveFilterButton = (containerId, filter) => {
+            const container = document.getElementById(containerId);
+            container.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active', 'bg-blue-500', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            const activeBtn = container.querySelector(`[data-${containerId.includes('nivel') ? 'nivel' : 'filter'}="${filter}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'bg-blue-500', 'text-white');
+                activeBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            }
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('#nivel-buttons button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    currentNivel = e.target.dataset.nivel;
+                    updateBarChart();
+                    setActiveFilterButton('nivel-buttons', currentNivel);
+                });
+            });
+
+            document.getElementById('year-selector').addEventListener('change', (e) => {
+                currentYear = e.target.value;
+                updateBarChart();
+            });
+
+            document.querySelectorAll('#filter-buttons button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    currentFilter = e.target.dataset.filter;
+                    updateBarChart();
+                    setActiveFilterButton('filter-buttons', currentFilter);
+                });
+            });
+
+            // Heatmap filter buttons
+            document.querySelectorAll('#heatmap-nivel-buttons button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    currentHeatmapNivel = e.target.dataset.nivel;
+                    renderHeatmap();
+                    setActiveFilterButton('heatmap-nivel-buttons', currentHeatmapNivel);
+                });
+            });
+
+            // Initial call to render the charts and heatmap
+            initializeLineChart();
+            updateBarChart();
+            renderHeatmap();
+        });
+    </script>
+</body>
+</html>
